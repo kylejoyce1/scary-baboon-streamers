@@ -4,33 +4,41 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { Streamer } from '@/lib/supabase'
 
-function formatTime(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true,
-    timeZoneName: 'short'
-  })
+const KJ_STREAMER: Streamer & { featured?: boolean; stream_end?: string } = {
+  id: 'kj-host',
+  youtube_url: 'https://www.youtube.com/@kj1vr',
+  channel_name: 'KJ1VR',
+  meta_quest_username: 'KJ_Quest',
+  stream_time: '2025-05-10T13:00:00-05:00',
+  stream_end: '2025-05-10T16:00:00-05:00',
+  created_at: '',
+  featured: true,
 }
 
-function isLive(stream_time: string) {
-  const t = new Date(stream_time).getTime()
+function isLive(stream_time: string, stream_end?: string) {
   const now = Date.now()
-  return now >= t && now <= t + 3 * 60 * 60 * 1000
+  const start = new Date(stream_time).getTime()
+  const end = stream_end ? new Date(stream_end).getTime() : start + 3 * 60 * 60 * 1000
+  return now >= start && now <= end
 }
 
 function isUpcoming(stream_time: string) {
   return new Date(stream_time).getTime() > Date.now()
 }
 
-function getYouTubeHandle(url: string) {
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short',
+  })
+}
+
+function getHandle(url: string) {
   try {
     const u = new URL(url)
     const parts = u.pathname.split('/').filter(Boolean)
-    return parts[parts.length - 1] || url
-  } catch {
-    return url
-  }
+    return parts[parts.length - 1]?.replace('@', '') || url
+  } catch { return url }
 }
 
 export default function Home() {
@@ -41,253 +49,160 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/streamers')
       .then(r => r.json())
-      .then(data => { setStreamers(Array.isArray(data) ? data : []); setLoading(false) })
+      .then(d => { setStreamers(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
+  const liveCount = streamers.filter(s => isLive(s.stream_time)).length
   const filtered = streamers.filter(s => {
     if (filter === 'live') return isLive(s.stream_time)
     if (filter === 'upcoming') return isUpcoming(s.stream_time)
     return true
   })
 
-  const liveCount = streamers.filter(s => isLive(s.stream_time)).length
+  const kjLive = isLive(KJ_STREAMER.stream_time, KJ_STREAMER.stream_end)
+  const kjUpcoming = isUpcoming(KJ_STREAMER.stream_time)
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Header */}
-      <header style={{
-        borderBottom: '1px solid var(--border)',
-        padding: '1.5rem 0',
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(8,8,8,0.95)',
-        backdropFilter: 'blur(12px)'
-      }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2rem' }}>🐒</span>
-            <div>
-              <div className="font-display" style={{ fontSize: '1.4rem', color: 'var(--text)', lineHeight: 1 }}>
-                SCARY BABOON
-              </div>
-              <div className="font-mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.15em' }}>
-                STREAMER HUB // WEEKEND EVENT
-              </div>
-            </div>
+      {/* STICKY HEADER */}
+      <header style={{ borderBottom: '1px solid var(--border)', padding: '1rem 1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,8,0.97)', position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(10px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <span style={{ fontSize: '1.5rem' }}>🐒</span>
+          <div>
+            <div className="font-display" style={{ fontSize: '1.05rem', lineHeight: 1, letterSpacing: '0.06em' }}>SCARY BABOON</div>
+            <div className="font-mono" style={{ fontSize: '0.52rem', color: 'var(--text-muted)', letterSpacing: '0.14em' }}>FIGHT BACK UPDATE // STREAM EVENT</div>
           </div>
-          <Link href="/register">
-            <button className="sb-btn" style={{ padding: '0.6rem 1.4rem', fontSize: '1rem' }}>
-              + Register
-            </button>
-          </Link>
         </div>
+        <Link href="/register">
+          <button className="sb-btn" style={{ padding: '0.55rem 1.25rem', fontSize: '0.95rem' }}>+ Register</button>
+        </Link>
       </header>
 
-      {/* Hero */}
-      <section style={{
-        padding: '4rem 1.5rem 3rem',
-        maxWidth: 900, margin: '0 auto',
-        borderBottom: '1px solid var(--border)'
-      }}>
-        <div className="fade-up" style={{ marginBottom: '0.5rem' }}>
-          <span className="tag">Meta Quest Event</span>
-        </div>
-        <h1
-          className="font-display glitch-text fade-up fade-up-delay-1"
-          data-text="THE HORDE STREAMS"
-          style={{ fontSize: 'clamp(3rem, 10vw, 6rem)', lineHeight: 1.05, marginTop: '1rem', marginBottom: '1rem' }}
-        >
-          THE HORDE STREAMS
+      {/* HERO */}
+      <section style={{ padding: '2.5rem 1.75rem 2rem', borderBottom: '1px solid var(--border)', maxWidth: 860, margin: '0 auto' }}>
+        <div className="fade-up" style={{ marginBottom: '0.6rem' }}><span className="tag">Meta Quest · Fight Back Update</span></div>
+        <h1 className="font-display fade-up fade-up-delay-1" style={{ fontSize: 'clamp(2rem,5.5vw,3.8rem)', lineHeight: 1.06, margin: '0.5rem 0 1rem', maxWidth: 600 }}>
+          STREAM EVENT —<br />SCARY BABOON<br /><span style={{ color: 'var(--accent)' }}>FIGHT BACK UPDATE</span>
         </h1>
-        <p className="fade-up fade-up-delay-2" style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: 480, lineHeight: 1.7 }}>
-          Watch the community take on Scary Baboon in VR. Every streamer below is part of the weekend chaos.
+        <p className="fade-up fade-up-delay-2" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.8, maxWidth: 480, margin: '0 0 1.5rem' }}>
+          Watch the community take on the <strong style={{ color: 'var(--text)' }}>new update</strong>. Register to stream and{' '}
+          <strong style={{ color: 'var(--accent)' }}>KJ will join your stream</strong> — and maybe donate &amp; giveaway things!
         </p>
-
-        <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: '2rem', marginTop: '2rem', flexWrap: 'wrap' }}>
+        <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           <div>
-            <div className="font-display" style={{ fontSize: '2.5rem', color: 'var(--accent)' }}>{streamers.length}</div>
-            <div className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>REGISTERED</div>
+            <div className="font-display" style={{ fontSize: '2rem', color: 'var(--accent)', lineHeight: 1 }}>{streamers.length + 1}</div>
+            <div className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-muted)', letterSpacing: '0.1em', marginTop: 3 }}>STREAMERS</div>
           </div>
-          {liveCount > 0 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div className="live-dot" style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--green)' }} />
-                <div className="font-display" style={{ fontSize: '2.5rem', color: 'var(--green)' }}>{liveCount}</div>
-              </div>
-              <div className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>LIVE NOW</div>
+          <div>
+            <div className="font-display" style={{ fontSize: '2rem', color: 'var(--green)', lineHeight: 1, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {(liveCount + (kjLive ? 1 : 0)) > 0 && <span className="live-dot" style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />}
+              {liveCount + (kjLive ? 1 : 0)}
             </div>
-          )}
+            <div className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-muted)', letterSpacing: '0.1em', marginTop: 3 }}>LIVE NOW</div>
+          </div>
         </div>
       </section>
 
-      {/* Filter */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '1.5rem 1.5rem 0' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(['all', 'live', 'upcoming'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="font-mono"
-              style={{
-                padding: '0.4rem 1rem',
-                fontSize: '0.75rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                background: filter === f ? 'var(--accent)' : 'var(--surface)',
-                color: filter === f ? '#fff' : 'var(--text-muted)',
-                border: '1px solid',
-                borderColor: filter === f ? 'var(--accent)' : 'var(--border)',
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              {f}
-              {f === 'live' && liveCount > 0 && (
-                <span style={{ marginLeft: '0.4rem', background: 'rgba(255,255,255,0.2)', borderRadius: 2, padding: '0 4px', fontSize: '0.65rem' }}>
-                  {liveCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Streamer List */}
-      <section style={{ maxWidth: 900, margin: '0 auto', padding: '1.5rem' }}>
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
-            <div className="font-mono" style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}>LOADING...</div>
-          </div>
-        )}
-
-        {!loading && filtered.length === 0 && (
-          <div style={{
-            textAlign: 'center', padding: '5rem 2rem',
-            border: '1px dashed var(--border)',
-          }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🐒</div>
-            <div className="font-display" style={{ fontSize: '1.5rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-              {filter === 'live' ? 'NO ONE IS LIVE YET' : filter === 'upcoming' ? 'NO UPCOMING STREAMS' : 'NO STREAMERS YET'}
+      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+        {/* KJ FEATURED */}
+        <section style={{ padding: '1.5rem 1.75rem', borderBottom: '1px solid var(--border)' }}>
+          <div className="font-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.12em', marginBottom: '0.75rem' }}>// HOSTING STREAMER</div>
+          <div style={{ background: 'linear-gradient(135deg,#141414,#111)', border: '1px solid #333', padding: '1.8rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: 200, height: 200, background: 'radial-gradient(circle,rgba(255,69,0,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.25rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '1.4rem' }}>👑</span>
+                  <a href={KJ_STREAMER.youtube_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                    <span className="font-display" style={{ fontSize: '2.2rem', color: 'var(--accent)' }}>KJ1VR</span>
+                  </a>
+                  {kjLive ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span className="live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
+                      <span className="tag tag-green">Live Now</span>
+                    </span>
+                  ) : kjUpcoming ? <span className="tag">Upcoming</span> : null}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.7rem' }}>
+                  <span className="font-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.07em' }}>META QUEST //</span>
+                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--text)' }}>{KJ_STREAMER.meta_quest_username}</span>
+                </div>
+                <div className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--text)', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', display: 'inline-block', padding: '0.4rem 0.85rem', marginBottom: '0.65rem', lineHeight: 1.5 }}>
+                  🗓&nbsp; Saturday, May 10 &nbsp;·&nbsp; 1:00 PM – 4:00 PM EST
+                </div>
+                <div className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: 380 }}>
+                  KJ will hop into community streams during his session — register and he might join your lobby, donate, or giveaway something.
+                </div>
+              </div>
+              <div style={{ paddingTop: '0.2rem' }}>
+                <a href={KJ_STREAMER.youtube_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'Space Mono', monospace", fontSize: '0.72rem', letterSpacing: '0.05em', color: 'var(--accent)', textDecoration: 'none', border: '1px solid rgba(255,69,0,0.3)', padding: '0.45rem 1.1rem', display: 'inline-block', transition: 'background 0.15s' }}>
+                  WATCH LIVE →
+                </a>
+              </div>
             </div>
-            <p className="font-mono" style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
-              {filter === 'all' ? 'Be the first to register below.' : 'Check back soon.'}
-            </p>
-            {filter === 'all' && (
-              <Link href="/register">
-                <button className="sb-btn" style={{ marginTop: '1.5rem' }}>Join The Horde</button>
-              </Link>
-            )}
           </div>
-        )}
+        </section>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filtered.map((s, i) => {
-            const live = isLive(s.stream_time)
-            const upcoming = isUpcoming(s.stream_time)
-            return (
-              <div
-                key={s.id}
-                className="streamer-card card-animate"
-                style={{ animationDelay: `${i * 0.05}s`, opacity: 0 }}
-              >
+        {/* COMMUNITY LIST */}
+        <section>
+          <div style={{ padding: '1rem 1.75rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div className="font-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.12em' }}>// COMMUNITY STREAMERS ({streamers.length})</div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['all', 'live', 'upcoming'] as const).map(f => (
+                <button key={f} onClick={() => setFilter(f)} className="font-mono" style={{ fontSize: '0.65rem', letterSpacing: '0.07em', textTransform: 'uppercase', padding: '0.3rem 0.85rem', border: '1px solid', borderColor: filter === f ? 'var(--accent)' : 'var(--border)', background: filter === f ? 'var(--accent)' : 'transparent', color: filter === f ? '#fff' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {f}{f === 'live' && liveCount > 0 ? ` (${liveCount})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '1.25rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {loading && <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}><span className="font-mono" style={{ fontSize: '0.8rem', letterSpacing: '0.1em' }}>LOADING...</span></div>}
+
+            {!loading && filtered.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '3.5rem 1rem', border: '1px dashed var(--border)' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🐒</div>
+                <div className="font-display" style={{ fontSize: '1.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>BE THE FIRST TO REGISTER</div>
+                <div className="font-mono" style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: '1.4rem', lineHeight: 1.6 }}>No community streamers yet.<br />KJ will join whoever signs up!</div>
+                <Link href="/register">
+                  <button className="sb-btn" style={{ width: 'auto', padding: '0.75rem 2rem', fontSize: '1rem' }}>REGISTER YOUR STREAM →</button>
+                </Link>
+              </div>
+            )}
+
+            {filtered.map((s, i) => (
+              <div key={s.id} className="streamer-card card-animate" style={{ animationDelay: `${i * 0.06}s`, opacity: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Number + Channel */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                      <span className="font-display" style={{
-                        fontSize: '1.4rem',
-                        color: 'var(--text-dim)',
-                        minWidth: '2rem'
-                      }}>
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <a
-                        href={s.youtube_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        <span className="font-display" style={{
-                          fontSize: '1.4rem',
-                          color: live ? 'var(--green)' : 'var(--text)',
-                          letterSpacing: '0.02em',
-                          transition: 'color 0.15s'
-                        }}>
-                          {getYouTubeHandle(s.youtube_url)}
-                        </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                      <span className="font-display" style={{ fontSize: '1.05rem', color: 'var(--text-dim)', minWidth: '1.6rem' }}>{String(i + 1).padStart(2, '0')}</span>
+                      <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                        <span className="font-display" style={{ fontSize: '1.5rem', color: isLive(s.stream_time) ? 'var(--green)' : 'var(--text)' }}>{s.channel_name || getHandle(s.youtube_url)}</span>
                       </a>
+                      {isLive(s.stream_time) ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}><span className="live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} /><span className="tag tag-green">Live</span></span>
+                      ) : isUpcoming(s.stream_time) ? <span className="tag">Upcoming</span> : <span className="font-mono" style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>Ended</span>}
                     </div>
-
-                    {/* Meta Quest Username */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <span className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>
-                        META QUEST //
-                      </span>
-                      <span className="font-mono" style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
-                        {s.meta_quest_username}
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.45rem' }}>
+                      <span className="font-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.07em' }}>META QUEST //</span>
+                      <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text)' }}>{s.meta_quest_username}</span>
                     </div>
-
-                    {/* Time */}
-                    <div className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      🕐 {formatTime(s.stream_time)}
-                    </div>
+                    <div className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{fmtTime(s.stream_time)}</div>
                   </div>
-
-                  {/* Status badge */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                    {live && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div className="live-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)' }} />
-                        <span className="tag tag-green">LIVE</span>
-                      </div>
-                    )}
-                    {!live && upcoming && <span className="tag">UPCOMING</span>}
-                    {!live && !upcoming && (
-                      <span className="font-mono" style={{ fontSize: '0.65rem', color: 'var(--text-dim)', letterSpacing: '0.05em' }}>
-                        COMPLETED
-                      </span>
-                    )}
-                    <a
-                      href={s.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono"
-                      style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--accent)',
-                        textDecoration: 'none',
-                        letterSpacing: '0.05em',
-                        border: '1px solid rgba(255,69,0,0.3)',
-                        padding: '0.25rem 0.6rem',
-                        transition: 'background 0.15s'
-                      }}
-                    >
-                      WATCH →
-                    </a>
+                  <div style={{ paddingTop: '0.1rem' }}>
+                    <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'Space Mono',monospace", fontSize: '0.65rem', letterSpacing: '0.05em', color: 'var(--accent)', textDecoration: 'none', border: '1px solid rgba(255,69,0,0.3)', padding: '0.25rem 0.65rem', display: 'inline-block' }}>WATCH →</a>
                   </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      </div>
 
-      {/* Footer */}
-      <footer style={{
-        borderTop: '1px solid var(--border)',
-        padding: '2rem 1.5rem',
-        maxWidth: 900, margin: '2rem auto 0',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem'
-      }}>
-        <div className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>
-          SCARY BABOON // ENVER STUDIO
-        </div>
-        <Link href="/register">
-          <button className="sb-btn" style={{ padding: '0.5rem 1.2rem', fontSize: '0.9rem' }}>
-            Register as Streamer
-          </button>
-        </Link>
+      <footer style={{ borderTop: '1px solid var(--border)', padding: '1.25rem 1.75rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', maxWidth: 860, margin: '1rem auto 0' }}>
+        <span className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>ENVER STUDIO // SCARY BABOON VR</span>
+        <span className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>FIGHT BACK UPDATE · MAY 2025</span>
       </footer>
     </main>
   )
