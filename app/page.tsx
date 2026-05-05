@@ -71,7 +71,7 @@ export default function Home() {
           <span style={{ fontSize: '1.5rem' }}>🐒</span>
           <div>
             <div className="font-display" style={{ fontSize: '1.05rem', lineHeight: 1, letterSpacing: '0.06em' }}>SCARY BABOON</div>
-            <div className="font-mono" style={{ fontSize: '0.52rem', color: 'var(--text-muted)', letterSpacing: '0.14em' }}>FIGHT BACK UPDATE // STREAM EVENT</div>
+            <div className="font-mono" style={{ fontSize: '0.52rem', color: 'var(--text-muted)', letterSpacing: '0.14em' }}> // STREAM EVENT</div>
           </div>
         </div>
         <Link href="/register">
@@ -81,9 +81,9 @@ export default function Home() {
 
       {/* HERO */}
       <section style={{ padding: '2.5rem 1.75rem 2rem', borderBottom: '1px solid var(--border)', maxWidth: 860, margin: '0 auto' }}>
-        <div className="fade-up" style={{ marginBottom: '0.6rem' }}><span className="tag">Meta Quest · Fight Back Update</span></div>
+        <div className="fade-up" style={{ marginBottom: '0.6rem' }}><span className="tag">Meta Quest · Weekend Stream Event</span></div>
         <h1 className="font-display fade-up fade-up-delay-1" style={{ fontSize: 'clamp(2rem,5.5vw,3.8rem)', lineHeight: 1.06, margin: '0.5rem 0 1rem', maxWidth: 600 }}>
-          STREAM EVENT —<br />SCARY BABOON<br /><span style={{ color: 'var(--accent)' }}>FIGHT BACK UPDATE</span>
+          SCARY BABOON<br /><span style={{ color: 'var(--accent)' }}>STREAM EVENT</span>
         </h1>
         <p className="fade-up fade-up-delay-2" style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.8, maxWidth: 480, margin: '0 0 1.5rem' }}>
           Watch the community take on the <strong style={{ color: 'var(--text)' }}>new update</strong>. Register to stream and{' '}
@@ -202,7 +202,7 @@ export default function Home() {
 
       <footer style={{ borderTop: '1px solid var(--border)', padding: '1.25rem 1.75rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', maxWidth: 860, margin: '1rem auto 0' }}>
         <span className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>ENVER STUDIO // SCARY BABOON VR</span>
-        <span className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>FIGHT BACK UPDATE · MAY 2025</span>
+        <span className="font-mono" style={{ fontSize: '0.58rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}> · MAY 2025</span>
       </footer>
     </main>
   )
